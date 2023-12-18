@@ -14,7 +14,7 @@ services:
       context: .
       dockerfile: ./docker/app/Dockerfile
     volumes:
-      - ./app:/usr/local/go/src/web/app
+      - ./app:/app
     tty: true
     depends_on:
       - db

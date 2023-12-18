@@ -1,16 +1,11 @@
 # go-postgreSQL-template
 
-Go(GORM + Gin) + PostgreSQL の API サーバーのテンプレート
+Go(GORM + Gin + Air) + PostgreSQL の API サーバー
 
 ## 使いかた
 
 ```
-docker-compose up -d
-docker-compose exec app sh
-```
-
-```
-go run main.go
+docker-compose up --build
 ```
 
 postman とかで、`POST localhost:8080/memos` に以下の JSON を送ると、DB に保存される。

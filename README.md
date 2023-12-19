@@ -8,7 +8,7 @@ Go(GORM + Gin + Air) + PostgreSQL の API サーバー
 docker-compose up --build
 ```
 
-postman とかで、`POST localhost:8080/memos` に以下の JSON を送ると、DB に保存される。
+postman とかで、`POST localhost:8080/todos` に以下の JSON を送ると、DB に保存される。
 
 ```json
 {
@@ -16,7 +16,7 @@ postman とかで、`POST localhost:8080/memos` に以下の JSON を送ると�
 }
 ```
 
-localhost:8080/memos にアクセスすると、DB の中身が表示される。
+localhost:8080/todos にアクセスすると、DB の中身が表示される。
 
 ## 参考記事
 https://pontaro.net/1305/

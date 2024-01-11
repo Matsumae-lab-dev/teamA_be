@@ -9,6 +9,7 @@ import (
 
 	"app/controllers"
 	"app/models"
+	seeder "app/seeds"
 )
  
 func main() {
@@ -22,22 +23,23 @@ func main() {
       fmt.Println("Connection Opened to Database")
  
       // 自動マイグレーション
-      // Memoモデルの構造体の通りのスキーマを構築(id、content、created_at、updated_at、deleted_at)
-      db.AutoMigrate(&models.Memo{})
+      // Todoモデルの構造体の通りのスキーマを構築(id、content、created_at、updated_at、deleted_at)
+      db.AutoMigrate(&models.Todo{})
+      seeder.Seeder(db)
  
       // モデルとコントローラの初期化
       // モデルはデータベースとのやり取りを担当し、コントローラはクライアントからのリクエストを処理し、モデルを通じてデータベースとやり取りをします。
-      memoModel := models.NewMemoModel(db)
-      memoController := controllers.NewMemoController(memoModel)
+      todoModel := models.NewTodoModel(db)
+      todoController := controllers.NewTodoController(todoModel)
  
       // ルーティング設定
       r := gin.Default()
-      r.GET("/memos", memoController.GetMemos)
-      r.GET("/memos/:id", memoController.GetMemo)
-      r.POST("/memos", memoController.CreateMemo)
-      r.PUT("/memos/:id", memoController.UpdateMemo)
-      r.DELETE("/memos/:id", memoController.DeleteMemo)
- 
+      r.GET("/todos", todoController.GetTodos)
+      r.GET("/todos/:id", todoController.GetTodo)
+      r.POST("/todos", todoController.CreateTodo)
+      r.PUT("/todos/:id", todoController.UpdateTodo)
+      r.DELETE("/todos/:id", todoController.DeleteTodo)
+
       // サーバ起動
       r.Run()
 }

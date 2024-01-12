@@ -5,7 +5,7 @@ Go(GORM + Gin + Air) + PostgreSQL の API サーバー
 ## 使いかた
 
 ```
-docker-compose up -d
+docker-compose up --build
 ```
 
 postman とかで、`POST localhost:8080/todos` に以下の JSON を送ると、DB に保存される。

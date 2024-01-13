@@ -23,15 +23,15 @@ func main() {
       fmt.Println("Connection Opened to Database")
  
       // 自動マイグレーション
-      // Todoモデルの構造体の通りのスキーマを構築(id、content、created_at、updated_at、deleted_at)
-      db.AutoMigrate(&models.Todo{})
+      // Todoモデルの構造体の通りのスキーマを構築
+      db.AutoMigrate(&models.Todo{}, &models.User{})
       seeder.Seeder(db)
- 
+      
       // モデルとコントローラの初期化
       // モデルはデータベースとのやり取りを担当し、コントローラはクライアントからのリクエストを処理し、モデルを通じてデータベースとやり取りをします。
       todoModel := models.NewTodoModel(db)
       todoController := controllers.NewTodoController(todoModel)
- 
+      
       // ルーティング設定
       r := gin.Default()
       r.GET("/todos", todoController.GetTodos)

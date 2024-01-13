@@ -24,6 +24,15 @@ type Todo struct {
       Category string `json:"category"`
       Deadline time.Time `json:"deadline"`
       State bool `gorm:"not null" json:"state"`
+      Users    []*User `gorm:"many2many:user_todos;"`
+}
+
+type User struct {
+      ID      uint   `gorm:"primary_key" json:"id"`
+      Name   string `gorm:"not null" json:"name"`
+      Email string `gorm:"not null" json:"email"`
+      Password string `gorm:"not null" json:"password"`
+      Todos    []*Todo `gorm:"many2many:user_todos;"`
 }
  
 type TodoModel struct {
@@ -66,6 +75,10 @@ func (m *TodoModel) Create(todo requests.CreateTodoInput) (Todo, error) {
       if err := m.DB.Create(&newTodo).Error; err != nil {
             return Todo{}, err
       }
+      // 中間テーブルの関係を作成
+      if err := m.DB.Model(&newTodo).Association("Users").Append(&User{Email: todo.Email}); err != nil {
+            return Todo{}, err
+      }
       return newTodo, nil
 }
  
@@ -93,4 +106,44 @@ func (m *TodoModel) Delete(id uint) error {
             return err
       }
       return m.DB.Delete(&todo).Error
+}
+
+func (m *TodoModel) CreateUser(user requests.CreateUserInput) (User, error) {
+      fmt.Printf("%+v\n", user)
+      newUser := User{
+            Name:       user.Name,
+            Email: user.Email,
+            Password:    user.Password,
+      }
+      if err := m.DB.Create(&newUser).Error; err != nil {
+            return User{}, err
+      }
+      return newUser, nil
+}
+
+func (m *TodoModel) GetAllUser() ([]User, error) {
+      var users []User
+      if err := m.DB.Find(&users).Error; err != nil {
+            return nil, err
+      }
+      fmt.Println(users)
+      return users, nil
+}
+
+func (m *TodoModel) GetUserByEmail(email string) (User, error) {
+      var user User
+      // First：指定されたモデルに基づいて最初のレコードを検索します。
+            // Where: 指定された条件に基づいてレコードをフィルタリングします。
+      if err := m.DB.Where("email = ?", email).First(&user).Error; err != nil {
+            return User{}, err
+      }
+      return user, nil
+}
+
+func (m *TodoModel) DeleteUserByEmail(email string) error {
+      user, err := m.GetUserByEmail(email)
+      if err != nil {
+            return err
+      }
+      return m.DB.Delete(&user).Error
 }

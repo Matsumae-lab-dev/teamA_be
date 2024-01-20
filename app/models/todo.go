@@ -49,7 +49,7 @@ func NewTodoModel(db *gorm.DB) *TodoModel {
 func (m *TodoModel) GetTodoAll() ([]Todo, error) {
       var todos []Todo
       // m.DB.Find(&todos) は GORM を使用してデータベースからメモを検索します。検索結果は todos スライスに格納されます。
-      if err := m.DB.Find(&todos).Error; err != nil {
+      if err := m.DB.Preload("Users").Find(&todos).Error; err != nil {
             return nil, err
       }
       fmt.Println(todos)
@@ -60,7 +60,7 @@ func (m *TodoModel) GetTodoByID(id uint) (Todo, error) {
       var todo Todo
       // First：指定されたモデルに基づいて最初のレコードを検索します。
       // Where: 指定された条件に基づいてレコードをフィルタリングします。
-      if err := m.DB.Where("id = ?", id).First(&todo).Error; err != nil {
+      if err := m.DB.Preload("Users").Where("id = ?", id).First(&todo).Error; err != nil {
             return Todo{}, err
       }
       return todo, nil

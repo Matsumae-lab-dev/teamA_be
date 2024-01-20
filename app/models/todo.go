@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	validation "github.com/go-ozzo/ozzo-validation" // 追加
+	"github.com/go-ozzo/ozzo-validation/is"         // 追加
+
 	"gorm.io/gorm"
 )
 
@@ -30,9 +33,8 @@ type Todo struct {
 type User struct {
       ID      uint   `gorm:"primary_key" json:"id"`
       Name   string `gorm:"not null" json:"name"`
-      Email string `gorm:"not null" json:"email"`
+      Email  string `gorm:"unique;not null" json:"email"`
       Password string `gorm:"not null" json:"password"`
-      Todos    []*Todo `gorm:"many2many:user_todos;"`
 }
  
 type TodoModel struct {
@@ -43,7 +45,8 @@ type TodoModel struct {
 func NewTodoModel(db *gorm.DB) *TodoModel {
       return &TodoModel{DB: db}
 }
-func (m *TodoModel) GetAll() ([]Todo, error) {
+
+func (m *TodoModel) GetTodoAll() ([]Todo, error) {
       var todos []Todo
       // m.DB.Find(&todos) は GORM を使用してデータベースからメモを検索します。検索結果は todos スライスに格納されます。
       if err := m.DB.Find(&todos).Error; err != nil {
@@ -53,17 +56,17 @@ func (m *TodoModel) GetAll() ([]Todo, error) {
       return todos, nil
 }
  
-func (m *TodoModel) GetByID(id uint) (Todo, error) {
+func (m *TodoModel) GetTodoByID(id uint) (Todo, error) {
       var todo Todo
       // First：指定されたモデルに基づいて最初のレコードを検索します。
-            // Where: 指定された条件に基づいてレコードをフィルタリングします。
+      // Where: 指定された条件に基づいてレコードをフィルタリングします。
       if err := m.DB.Where("id = ?", id).First(&todo).Error; err != nil {
             return Todo{}, err
       }
       return todo, nil
 }
  
-func (m *TodoModel) Create(todo requests.CreateTodoInput) (Todo, error) {
+func (m *TodoModel) CreateTodo(todo requests.CreateTodoInput) (Todo, error) {
       fmt.Printf("%+v\n", todo)
       newTodo := Todo{
             Title:       todo.Title,
@@ -82,8 +85,8 @@ func (m *TodoModel) Create(todo requests.CreateTodoInput) (Todo, error) {
       return newTodo, nil
 }
  
-func (m *TodoModel) Update(id uint, todo requests.UpdateTodoInput) (Todo, error) {
-      existingTodo, err := m.GetByID(id)
+func (m *TodoModel) UpdateTodo(id uint, todo requests.UpdateTodoInput) (Todo, error) {
+      existingTodo, err := m.GetTodoByID(id)
       if err != nil {
             return Todo{}, err
       }
@@ -100,8 +103,8 @@ func (m *TodoModel) Update(id uint, todo requests.UpdateTodoInput) (Todo, error)
       return existingTodo, nil
 }
  
-func (m *TodoModel) Delete(id uint) error {
-      todo, err := m.GetByID(id)
+func (m *TodoModel) DeleteTodo(id uint) error {
+      todo, err := m.GetTodoByID(id)
       if err != nil {
             return err
       }
@@ -110,11 +113,25 @@ func (m *TodoModel) Delete(id uint) error {
 
 func (m *TodoModel) CreateUser(user requests.CreateUserInput) (User, error) {
       fmt.Printf("%+v\n", user)
+
+      // 既存のユーザーが存在するか確認
+      _, err := m.GetUserByEmail(user.Email)
+      if err == nil {
+            // 既存のユーザーが見つかった場合はエラーを返す
+            return User{}, fmt.Errorf("User with email %s already exists", user.Email)
+      }
+      
       newUser := User{
             Name:       user.Name,
-            Email: user.Email,
+            Email:      user.Email,
             Password:    user.Password,
       }
+
+      // バリデーション
+      if err := newUser.ValidateUser(); err != nil {
+            return User{}, err
+      }
+
       if err := m.DB.Create(&newUser).Error; err != nil {
             return User{}, err
       }
@@ -140,10 +157,60 @@ func (m *TodoModel) GetUserByEmail(email string) (User, error) {
       return user, nil
 }
 
+func (m *TodoModel) UpdateUser(email string, user requests.UpdateUserInput) (User, error) { 
+      existingUser, err := m.GetUserByEmail(email)
+      if err != nil {
+            return User{}, err
+      }
+      updatedUser := requests.UpdateUserInput{
+            Name:       user.Name,
+            Email: user.Email,
+            Password:    user.Password,
+      }
+      if err := m.DB.Model(&existingUser).Updates(updatedUser).Error; err != nil {
+            return User{}, err
+      }
+      return existingUser, nil
+}
+
 func (m *TodoModel) DeleteUserByEmail(email string) error {
       user, err := m.GetUserByEmail(email)
       if err != nil {
             return err
       }
       return m.DB.Delete(&user).Error
+}
+
+func (user *User) ValidateUser() error {
+      err := validation.ValidateStruct(user,
+            validation.Field(&user.Name,
+                  validation.Required.Error("Name is requred"),
+                  validation.Length(1, 255).Error("Name is too long"),
+            ),
+            validation.Field(&user.Email,
+                  validation.Required.Error("Email is required"),
+                  is.Email.Error("Email is invalid format"),
+            ),
+            validation.Field(&user.Password,
+                  validation.Required.Error("Password is required"),
+                  validation.Length(8, 255).Error("Password is less than 7 chars or more than 256 chars"),
+            ),
+      )
+      return err
+}
+
+
+func (m *TodoModel) LoginUser(user requests.LoginInput) (User, error) {
+      var loginUser User
+      if err := m.DB.Where("email = ? AND password = ?", user.Email, user.Password).First(&loginUser).Error; err != nil {
+            return User{}, err
+      }
+      return loginUser, nil
+}
+
+func (m *TodoModel) VerifyPassword(user User, password string) error {
+      if user.Password != password {
+            return fmt.Errorf("Password is invalid")
+      }
+      return nil
 }

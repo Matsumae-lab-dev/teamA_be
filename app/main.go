@@ -10,6 +10,7 @@ import (
 
 	"app/controllers"
 	"app/models"
+	"app/pkg/middleware"
 )
  
 func main() {
@@ -37,16 +38,20 @@ func main() {
       
       // ルーティング設定
       r := gin.Default()
-      r.GET("/todos", todoController.GetTodos)
-      r.GET("/todos/:id", todoController.GetTodo)
-      r.POST("/todos", todoController.CreateTodo)
-      r.PUT("/todos/:id", todoController.UpdateTodo)
-      r.DELETE("/todos/:id", todoController.DeleteTodo)
+      api := r.Group("/api")
+      api.Use(middleware.AuthMiddleware)
+      {
+            api.GET("/todos", todoController.GetTodos)
+            api.GET("/todos/:id", todoController.GetTodo)
+            api.POST("/todos", todoController.CreateTodo)
+            api.PUT("/todos/:id", todoController.UpdateTodo)
+            api.DELETE("/todos/:id", todoController.DeleteTodo)
       
-      r.GET("/users", todoController.GetUsers)
-      r.GET("/users/:email", todoController.GetUser)
-      r.PUT("/users/:email", todoController.UpdateUser)
-      r.DELETE("/users/:email", todoController.DeleteUser)
+            api.GET("/users", todoController.GetUsers)
+            api.GET("/users/:email", todoController.GetUser)
+            api.PUT("/users/:email", todoController.UpdateUser)
+            api.DELETE("/users/:email", todoController.DeleteUser)
+      }
 
       // auth group
       auth := r.Group("/auth")

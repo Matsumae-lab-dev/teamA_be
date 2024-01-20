@@ -41,4 +41,7 @@ require (
 	gorm.io/driver/postgres v1.5.4
 )
 
-require github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
+require (
+	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.0
+)

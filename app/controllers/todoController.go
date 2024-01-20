@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"app/models"
+	"app/pkg/utils"
 	"app/requests"
 
 	"github.com/gin-gonic/gin"
@@ -178,6 +179,21 @@ func (mc *TodoController) SignUp(c *gin.Context) {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
       }
+      fmt.Printf("%+v\n", user)
+
+	token, err := utils.GenerateToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to sign up",
+		})
+		return
+	}
+
+      // Cookieの有効期限を設定
+      cookieMaxAge := 60 * 60 * 24 * 30 // 30日
+
+    // Cookieにトークンをセット
+	c.SetCookie("token", token, cookieMaxAge, "/", "localhost", false, true)
 
       c.JSON(http.StatusOK, gin.H{"data": user})
 }
@@ -200,6 +216,19 @@ func (mc *TodoController) Login(c *gin.Context) {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
       }
+
+      token, err := utils.GenerateToken(user.ID)
+      if err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{
+                  "message": "Failed to login",
+            })
+            return
+      }
+
+      // Cookieの有効期限を設定
+      cookieMaxAge := 60 * 60 * 24 * 30 // 30日
+      // Cookieにトークンをセット
+      c.SetCookie("token", token, cookieMaxAge, "/", "localhost", false, true)
 
       c.JSON(http.StatusOK, gin.H{
             "data": map[string]interface{}{

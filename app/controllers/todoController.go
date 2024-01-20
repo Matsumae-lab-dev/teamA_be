@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"app/models"
+	"app/pkg/utils"
 	"app/requests"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +25,7 @@ func NewTodoController(m *models.TodoModel) *TodoController {
 // gin.ContextはGinの中心的な部分で、リクエストとレスポンスの情報を含んでいます
 func (mc *TodoController) GetTodos(c *gin.Context) {
       // models/todo.goのGetAll関数で全件取得
-      todos, err := mc.Model.GetAll()
+      todos, err := mc.Model.GetTodoAll()
       if err != nil {
             // 500エラーを返す
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -44,7 +46,7 @@ func (mc *TodoController) GetTodo(c *gin.Context) {
  
       // GetByID関数はuint型を引数として受け取るのでuinit型に変換
       // uint型: 0および正の整数のみを表現できます
-      todo, err := mc.Model.GetByID(uint(id))
+      todo, err := mc.Model.GetTodoByID(uint(id))
       if err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
@@ -65,7 +67,7 @@ func (mc *TodoController) CreateTodo(c *gin.Context) {
       }
  
       // 入力されたcontentを引数に
-      todo, err := mc.Model.Create(input)
+      todo, err := mc.Model.CreateTodo(input)
       if err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
@@ -87,7 +89,7 @@ func (mc *TodoController) UpdateTodo(c *gin.Context) {
             return
       }
  
-      todo, err := mc.Model.Update(uint(id), input)
+      todo, err := mc.Model.UpdateTodo(uint(id), input)
       if err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
@@ -103,10 +105,135 @@ func (mc *TodoController) DeleteTodo(c *gin.Context) {
             return
       }
  
-      if err := mc.Model.Delete(uint(id)); err != nil {
+      if err := mc.Model.DeleteTodo(uint(id)); err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
       }
  
       c.JSON(http.StatusOK, gin.H{"data": true})
+}
+
+func (mc *TodoController) GetUsers(c *gin.Context) {
+      users, err := mc.Model.GetAllUser()
+      if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+      }
+      c.JSON(http.StatusOK, gin.H{"data": users})
+}
+
+func (mc *TodoController) GetUser(c *gin.Context) {
+      email := c.Param("email")
+      fmt.Printf("%+v\n", email)
+ 
+      user, err := mc.Model.GetUserByEmail(email)
+      if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+      }
+ 
+      c.JSON(http.StatusOK, gin.H{"data": user})
+}
+
+func (mc *TodoController) UpdateUser(c *gin.Context) {
+      email := c.Param("email")
+      fmt.Printf("%+v\n", email)
+ 
+      var input requests.UpdateUserInput
+      if err := c.ShouldBindJSON(&input); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+      }
+
+      user, err := mc.Model.UpdateUser(email, input)
+      if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+      }
+
+      c.JSON(http.StatusOK, gin.H{"data": user})
+}
+
+func (mc *TodoController) DeleteUser(c *gin.Context) {
+      email := c.Param("email")
+      fmt.Printf("%+v\n", email)
+ 
+      if err := mc.Model.DeleteUserByEmail(email); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+      }
+ 
+      c.JSON(http.StatusOK, gin.H{"data": true})
+}
+
+// signUp login logout
+func (mc *TodoController) SignUp(c *gin.Context) {
+      var input requests.CreateUserInput
+      if err := c.ShouldBindJSON(&input); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+      }
+      
+      user, err := mc.Model.CreateUser(input)
+      if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+      }
+      fmt.Printf("%+v\n", user)
+
+	token, err := utils.GenerateToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Failed to sign up",
+		})
+		return
+	}
+
+      // Cookieの有効期限を設定
+      cookieMaxAge := 60 * 60 * 24 * 30 // 30日
+
+    // Cookieにトークンをセット
+	c.SetCookie("token", token, cookieMaxAge, "/", "localhost", false, true)
+
+      c.JSON(http.StatusOK, gin.H{"data": user})
+}
+
+func (mc *TodoController) Login(c *gin.Context) {
+      var input requests.LoginInput
+      if err := c.ShouldBindJSON(&input); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+      }
+      
+      user, err := mc.Model.LoginUser(input)
+      if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+      }
+
+      err = mc.Model.VerifyPassword(user, input.Password)
+      if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+      }
+
+      token, err := utils.GenerateToken(user.ID)
+      if err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{
+                  "message": "Failed to login",
+            })
+            return
+      }
+
+      // Cookieの有効期限を設定
+      cookieMaxAge := 60 * 60 * 24 * 30 // 30日
+      // Cookieにトークンをセット
+      c.SetCookie("token", token, cookieMaxAge, "/", "localhost", false, true)
+
+      c.JSON(http.StatusOK, gin.H{
+            "data": map[string]interface{}{
+                  "message": "login success",
+                  "user": user,
+            },
+      })
 }

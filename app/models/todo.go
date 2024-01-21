@@ -200,7 +200,7 @@ func (user *User) ValidateUser() error {
 }
 
 
-func (m *TodoModel) LoginUser(user requests.LoginInput) (User, error) {
+func (m *TodoModel) LoginUser(user requests.AuthInput) (User, error) {
       var loginUser User
       if err := m.DB.Where("email = ? AND password = ?", user.Email, user.Password).First(&loginUser).Error; err != nil {
             return User{}, err
@@ -213,4 +213,32 @@ func (m *TodoModel) VerifyPassword(user User, password string) error {
             return fmt.Errorf("Password is invalid")
       }
       return nil
+}
+
+func (m *TodoModel) ConvertTodoToOutput(todo Todo) (requests.GetTodoOutput) {
+      var users []requests.AuthOutput
+      for _, user := range todo.Users {
+            users = append(users, requests.AuthOutput{
+                  ID:    user.ID,
+                  Name:  user.Name,
+                  Email: user.Email,
+            })
+      }
+      return requests.GetTodoOutput{
+            ID:          todo.ID,
+            Title:       todo.Title,
+            Description: todo.Description,
+            Category:    todo.Category,
+            Deadline:    todo.Deadline,
+            State:       todo.State,
+            Users:       users,
+      }
+}
+
+func (m *TodoModel) ConvertTodosToOutput(todos []Todo) ([]requests.GetTodoOutput) {
+      var output []requests.GetTodoOutput
+      for _, todo := range todos {
+            output = append(output, m.ConvertTodoToOutput(todo))
+      }
+      return output
 }

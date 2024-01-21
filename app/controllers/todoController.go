@@ -31,9 +31,11 @@ func (mc *TodoController) GetTodos(c *gin.Context) {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
       }
+      output := mc.Model.ConvertTodosToOutput(todos)
+
       // JSONメソッドは、HTTPレスポンスをJSON形式で生成するためのメソッド
       // gin.HはGinが提供する便利な関数で、map[string]interface{}型のマップを短く書くためのものです。この場合、"data": todosはクライアントに返すJSONのキーと値を設定しています。
-      c.JSON(http.StatusOK, gin.H{"data": todos})
+      c.JSON(http.StatusOK, gin.H{"data": output})
 }
  
 func (mc *TodoController) GetTodo(c *gin.Context) {
@@ -51,8 +53,9 @@ func (mc *TodoController) GetTodo(c *gin.Context) {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
       }
+      output := mc.Model.ConvertTodoToOutput(todo)
  
-      c.JSON(http.StatusOK, gin.H{"data": todo})
+      c.JSON(http.StatusOK, gin.H{"data": output})
 }
  
 func (mc *TodoController) CreateTodo(c *gin.Context) {
@@ -77,19 +80,13 @@ func (mc *TodoController) CreateTodo(c *gin.Context) {
 }
  
 func (mc *TodoController) UpdateTodo(c *gin.Context) {
-      id, err := strconv.Atoi(c.Param("id"))
-      if err != nil {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-            return
-      }
- 
       var input requests.UpdateTodoInput
       if err := c.ShouldBindJSON(&input); err != nil {
             c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
             return
       }
  
-      todo, err := mc.Model.UpdateTodo(uint(id), input)
+      todo, err := mc.Model.UpdateTodo(uint(input.ID), input)
       if err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
@@ -189,17 +186,22 @@ func (mc *TodoController) SignUp(c *gin.Context) {
 		return
 	}
 
+      var output requests.AuthOutput
+      output.ID = user.ID
+      output.Name = user.Name
+      output.Email = user.Email
+
       // Cookieの有効期限を設定
       cookieMaxAge := 60 * 60 * 24 * 30 // 30日
 
     // Cookieにトークンをセット
 	c.SetCookie("token", token, cookieMaxAge, "/", "localhost", false, true)
 
-      c.JSON(http.StatusOK, gin.H{"data": user})
+      c.JSON(http.StatusOK, gin.H{"data": output})
 }
 
 func (mc *TodoController) Login(c *gin.Context) {
-      var input requests.LoginInput
+      var input requests.AuthInput
       if err := c.ShouldBindJSON(&input); err != nil {
             c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
             return
@@ -210,13 +212,13 @@ func (mc *TodoController) Login(c *gin.Context) {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
       }
-
+      
       err = mc.Model.VerifyPassword(user, input.Password)
       if err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
       }
-
+      
       token, err := utils.GenerateToken(user.ID)
       if err != nil {
             c.JSON(http.StatusBadRequest, gin.H{
@@ -224,6 +226,11 @@ func (mc *TodoController) Login(c *gin.Context) {
             })
             return
       }
+      
+      var output requests.AuthOutput
+      output.ID = user.ID
+      output.Name = user.Name
+      output.Email = user.Email
 
       // Cookieの有効期限を設定
       cookieMaxAge := 60 * 60 * 24 * 30 // 30日
@@ -233,7 +240,7 @@ func (mc *TodoController) Login(c *gin.Context) {
       c.JSON(http.StatusOK, gin.H{
             "data": map[string]interface{}{
                   "message": "login success",
-                  "user": user,
+                  "user": output,
             },
       })
 }

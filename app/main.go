@@ -44,13 +44,13 @@ func main() {
             api.GET("/todos", todoController.GetTodos)
             api.GET("/todos/:id", todoController.GetTodo)
             api.POST("/todos", todoController.CreateTodo)
-            api.PUT("/todos/:id", todoController.UpdateTodo)
+            api.PUT("/todos", todoController.UpdateTodo)
             api.DELETE("/todos/:id", todoController.DeleteTodo)
       
-            api.GET("/users", todoController.GetUsers)
-            api.GET("/users/:email", todoController.GetUser)
-            api.PUT("/users/:email", todoController.UpdateUser)
-            api.DELETE("/users/:email", todoController.DeleteUser)
+            // api.GET("/users", todoController.GetUsers)
+            // api.GET("/users/:email", todoController.GetUser)
+            // api.PUT("/users/:email", todoController.UpdateUser)
+            // api.DELETE("/users/:email", todoController.DeleteUser)
       }
 
       // auth group

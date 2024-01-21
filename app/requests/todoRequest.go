@@ -2,6 +2,16 @@ package requests
 
 import "time"
 
+type GetTodoOutput struct {
+      ID uint `json:"id"`
+      Title string `json:"title"`
+      Description string `json:"description"`
+      Category string `json:"category"`
+      Deadline time.Time `json:"deadline"`
+      State bool `json:"state"`
+      Users []AuthOutput `json:"users"`
+}
+
 type CreateTodoInput struct {
       Title string `json:"title" binding:"required"`
       Description string `json:"description"`
@@ -12,6 +22,7 @@ type CreateTodoInput struct {
 }
  
 type UpdateTodoInput struct {
+      ID uint `json:"id"`
       Title string `json:"title"`
       Description string `json:"description"`
       Category string `json:"category"`
@@ -31,7 +42,13 @@ type UpdateUserInput struct {
       Password string `json:"password"`
 }
 
-type LoginInput struct {
+type AuthInput struct {
       Email string `json:"email" binding:"required"`
       Password string `json:"password" binding:"required"`
+}
+
+type AuthOutput struct {
+      ID uint `json:"id"`
+      Name string `json:"name"`
+      Email string `json:"email"`
 }

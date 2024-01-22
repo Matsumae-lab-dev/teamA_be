@@ -9,15 +9,23 @@ services:
     ports:
       - 5432:5432
   app:
-    container_name: go_api
+    container_name: go-api
     build:
       context: .
-      dockerfile: ./docker/app/Dockerfile
+      dockerfile: ./Dockerfile
     volumes:
       - ./app:/app
+      # - app-volume:/app
     tty: true
     depends_on:
       - db
     ports:
       - 8080:8080
     env_file: .env
+
+# volumes:
+#   app-volume:
+#     driver: azure_file
+#     driver_opts:
+#       share_name: app-volume
+#       storage_account_name: smaruteamb

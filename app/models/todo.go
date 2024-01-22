@@ -75,11 +75,21 @@ func (m *TodoModel) CreateTodo(todo requests.CreateTodoInput) (Todo, error) {
             Deadline:    todo.Deadline,
             State:       todo.State,
       }
+
+      relationUser,err := m.GetUserByEmail(todo.Email)
+      if err != nil {
+            return Todo{}, err
+      }
       if err := m.DB.Create(&newTodo).Error; err != nil {
             return Todo{}, err
       }
       // 中間テーブルの関係を作成
-      if err := m.DB.Model(&newTodo).Association("Users").Append(&User{Email: todo.Email}); err != nil {
+      if err := m.DB.Model(&newTodo).Association("Users").Append(&User{
+            ID: relationUser.ID, 
+            Email: relationUser.Email,
+            Name: relationUser.Name,
+            Password: relationUser.Password,
+            }); err != nil {
             return Todo{}, err
       }
       return newTodo, nil
